@@ -76,7 +76,7 @@ const MapComponent = () => {
     try {
       console.log("Token before fetch:", token);
       console.log("Coordinates:", polygonCoordinates);
-      const imageBlob = await fetchData(currentLayer, {
+      const imageBlob = await fetchData("NDVI", {
         coordinates: polygonCoordinates,
         refreshToken,
         token,
@@ -127,7 +127,7 @@ const MapComponent = () => {
         <PolygonDrawing
           map={map}
           onPolygonDrawn={handlePolygonDrawn}
-          changeCoordinates={handlePolygonDrawn} // Use handlePolygonDrawn instead of changeCoordinates
+          //changeCoordinates={changecoordinates} // Use handlePolygonDrawn instead of changeCoordinates
         />
       )}
     </>
