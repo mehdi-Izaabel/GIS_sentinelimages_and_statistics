@@ -171,6 +171,7 @@ function evaluatePixel(sample) {
                             "Content-Type": "multipart/form-data",
                             Accept: "*/*",
                         },
+                        responseType: "blob",
                     }
                 );
 
@@ -182,7 +183,7 @@ function evaluatePixel(sample) {
                 }
 
                 if (response.status === 200) {
-                    const imageBlob = new Blob([response.data]);
+                    const imageBlob = response.data;
                     console.log(imageBlob);
                     return imageBlob;
                 } else {
