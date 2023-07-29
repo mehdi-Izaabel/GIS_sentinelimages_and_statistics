@@ -3,9 +3,11 @@ import Map from "ol/Map";
 import View from "ol/View";
 import TileLayer from "ol/layer/Tile";
 import OSM from "ol/source/OSM";
-import { XYZ } from "ol/source"; // Import XYZ source for true color layer
-import { fromLonLat } from "ol/proj"; // Import fromLonLat to convert coordinates
-import { transformExtent } from "ol/proj"; // Import transformExtent to convert extent
+import { XYZ } from "ol/source";
+import { toLonLat, transformExtent } from "ol/proj";
+import Overlay from "ol/Overlay";
+import { Image as ImageLayer } from "ol/layer";
+import { ImageStatic } from "ol/source";
 import Draw from "ol/interaction/Draw";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
@@ -20,14 +22,13 @@ const MapComponent = () => {
   const [map, setMap] = useState(null);
   const [polygonCoordinates, setPolygonCoordinates] = useState([]);
   const vectorSourceRef = useRef(new VectorSource());
-  const drawRef = useRef(null);
+  const vectorLayerRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const { token, refreshToken } = useContext(AuthContext);
   const [imageData, setImageData] = useState(null);
-  const [currentLayer, setCurrentLayer] = useState("normal"); // Track the current layer
+  const [currentLayer, setCurrentLayer] = useState("normal");
 
   useEffect(() => {
-    // Create the map when the component mounts
     const initialMap = new Map({
       target: mapRef.current,
       layers: [new TileLayer({ source: new OSM() })],
@@ -39,25 +40,21 @@ const MapComponent = () => {
 
     setMap(initialMap);
 
-    // Clean up the map when the component unmounts
     return () => {
       initialMap.setTarget(null);
     };
   }, []);
 
   useEffect(() => {
-    // Create true color layer
     const trueColorLayer = new TileLayer({
       source: new XYZ({
-        url: "https://api.maptiler.com/tiles/satellite/{z}/{x}/{y}.jpg?key=pztnjdxqdpgzcXoBlJCu", // Replace with the URL of your true color tile server
+        url: "https://api.maptiler.com/tiles/satellite/{z}/{x}/{y}.jpg?key=pztnjdxqdpgzcXoBlJCu",
       }),
     });
 
-    // Wait for map to be set before updating layers
     if (map) {
-      // Add or switch layers based on the currentLayer state
       if (currentLayer === "normal") {
-        map.getLayers().setAt(1, new TileLayer({ source: new OSM() })); // Replace the layer at index 1 with OSM (default layer)
+        map.getLayers().setAt(1, new TileLayer({ source: new OSM() }));
       } else if (currentLayer === "TrueColor") {
         map.getLayers().setAt(1, trueColorLayer);
       }
@@ -65,7 +62,7 @@ const MapComponent = () => {
   }, [map, currentLayer]);
 
   const handleDrawingPolygon = () => {
-    setIsDrawing(!isDrawing); // Toggle the drawing state
+    setIsDrawing(!isDrawing);
   };
 
   const handlePolygonDrawn = (coordinates) => {
@@ -74,30 +71,70 @@ const MapComponent = () => {
 
   const handleFetchData = async () => {
     try {
-      console.log("Token before fetch:", token);
-      console.log("Coordinates:", polygonCoordinates);
+      if (!map || polygonCoordinates.length === 0) {
+        console.warn(
+          "Cannot fetch data. Map or polygon coordinates are not ready."
+        );
+        return;
+      }
       const imageBlob = await fetchData("NDVI", {
         coordinates: polygonCoordinates,
         refreshToken,
         token,
       });
 
-      // Use the imageBlob as needed (e.g., to display the image)
-      const imageData = URL.createObjectURL(imageBlob);
-      setImageData(imageData);
+      const imageExtent = getExtentForCoordinates(polygonCoordinates);
+      const imageSource = new ImageLayer({
+        source: new ImageStatic({
+          url: URL.createObjectURL(imageBlob),
+          imageExtent,
+        }),
+      });
+
+      if (vectorLayerRef.current) {
+        map.removeLayer(vectorLayerRef.current);
+      }
+
+      map.addLayer(imageSource);
+      setImageData(imageSource.getSource().getUrl());
     } catch (error) {
-      // Handle any errors that occur during the fetch
       console.error("Error fetching data:", error.message);
     }
   };
+
   const handleToggleLayer = () => {
-    // Toggle between normal and true color layers
     if (currentLayer === "normal") {
       setCurrentLayer("TrueColor");
     } else {
       setCurrentLayer("normal");
     }
   };
+
+  useEffect(() => {
+    vectorLayerRef.current = new VectorLayer({
+      source: vectorSourceRef.current,
+      style: new Style({
+        fill: new Fill({
+          color: "rgba(0, 0, 0, 0.2)",
+        }),
+        stroke: new Stroke({
+          color: "white",
+          width: 2,
+        }),
+      }),
+    });
+
+    if (map) {
+      map.addLayer(vectorLayerRef.current);
+    }
+
+    return () => {
+      if (map) {
+        map.removeLayer(vectorLayerRef.current);
+      }
+    };
+  }, [map]);
+
   return (
     <>
       <div ref={mapRef} style={{ width: "100%", height: "100vh" }}></div>
@@ -122,16 +159,29 @@ const MapComponent = () => {
           ? "Switch to True Color"
           : "Switch to Normal Color"}
       </button>
+      {/* Display the fetched image inside the polygon */}
       {imageData && <img src={imageData} alt="Fetched Image" />}
       {isDrawing && (
-        <PolygonDrawing
-          map={map}
-          onPolygonDrawn={handlePolygonDrawn}
-          //changeCoordinates={changecoordinates} // Use handlePolygonDrawn instead of changeCoordinates
-        />
+        <PolygonDrawing map={map} onPolygonDrawn={handlePolygonDrawn} />
       )}
     </>
   );
 };
 
 export default MapComponent;
+
+function getExtentForCoordinates(coordinates) {
+  const extent = coordinates.reduce(
+    (acc, coord) => {
+      acc[0] = Math.min(acc[0], coord[0]);
+      acc[1] = Math.min(acc[1], coord[1]);
+      acc[2] = Math.max(acc[2], coord[0]);
+      acc[3] = Math.max(acc[3], coord[1]);
+      return acc;
+    },
+    [Infinity, Infinity, -Infinity, -Infinity]
+  );
+
+  const transformedExtent = transformExtent(extent, "EPSG:4326", "EPSG:3857");
+  return transformedExtent;
+}
