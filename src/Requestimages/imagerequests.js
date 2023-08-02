@@ -127,7 +127,7 @@ function evaluatePixel(sample) {
 
                 formData.append(
                     "evalscript",
-                    `//VERSION=3
+                    `// VERSION=3
 function setup() {
   return {
     input: [{ bands: ["B04", "B08", "dataMask"] }],
@@ -138,32 +138,50 @@ function setup() {
   };
 }
 
+function sigmoid(x, k = 10) {
+  return 1 / (1 + Math.exp(-k * (x - 0.5)));
+}
+
+function findColor(colValPairs, val) {
+  let n = colValPairs.length;
+  for (let i = 1; i < n; i++) {
+    if (val <= colValPairs[i][0]) {
+      return toRGB(colValPairs[i - 1][1]);
+    }
+  }
+  return toRGB(colValPairs[n - 1][1]);
+}
+
+function toRGB(val) {
+  return [val >>> 16, (val >>> 8) & 0xFF, val & 0xFF].map(x => x / 255);
+}
+
+let ndviColorMap = [
+  [-1.0, 0x000000],
+  [-0.2, 0xA50026],
+  [0.0, 0xD73027],
+  [0.1, 0xF46D43],
+  [0.2, 0xFDAE61],
+  [0.3, 0xFEE08B],
+  [0.4, 0xFFFFBF],
+  [0.5, 0xD9EF8B],
+  [0.6, 0xA6D96A],
+  [0.7, 0x66BD63],
+  [0.8, 0x1A9850],
+  [0.9, 0x006837]
+];
+
 function evaluatePixel(sample) {
   const ndvi = (sample.B08 - sample.B04) / (sample.B08 + sample.B04);
   const alpha = sample.dataMask === 1 ? 255 : 0; // Set alpha to 0 for pixels outside the area of interest
 
-  if (ndvi < -0.5) return [0.63, 0.02, 0.02, alpha];
-  else if (ndvi < -0.2) return [0.61, 0.05, 0.03, alpha];
-  else if (ndvi < -0.1) return [0.58, 0.09, 0.04, alpha];
-  else if (ndvi < 0) return [0.56, 0.12, 0.05, alpha];
-  else if (ndvi < 0.025) return [0.53, 0.15, 0.08, alpha];
-  else if (ndvi < 0.05) return [0.73, 0.35, 0.21, alpha];
-  else if (ndvi < 0.075) return [0.68, 0.38, 0.21, alpha];
-  else if (ndvi < 0.1) return [0.64, 0.40, 0.21, alpha];
-  else if (ndvi < 0.125) return [0.60, 0.42, 0.21, alpha];
-  else if (ndvi < 0.15) return [0.56, 0.45, 0.21, alpha];
-  else if (ndvi < 0.175) return [0.52, 0.47, 0.21, alpha];
-  else if (ndvi < 0.2) return [0.47, 0.49, 0.21, alpha];
-  else if (ndvi < 0.25) return [0.44, 0.51, 0.20, alpha];
-  else if (ndvi < 0.3) return [0.39, 0.54, 0.20, alpha];
-  else if (ndvi < 0.35) return [0.35, 0.56, 0.20, alpha];
-  else if (ndvi < 0.4) return [0.31, 0.58, 0.20, alpha];
-  else if (ndvi < 0.45) return [0.27, 0.60, 0.20, alpha];
-  else if (ndvi < 0.5) return [0.23, 0.63, 0.20, alpha];
-  else if (ndvi < 0.55) return [0.19, 0.65, 0.20, alpha];
-  else if (ndvi < 0.6) return [0.14, 0.67, 0.20, alpha];
-  else return [0, 0.27, 0, alpha];
+  if (ndvi >= 1) return [0.843, 0.843, 0.843, alpha];      // Grey - Full vegetation
+  else {
+    const contrastedNDVI = sigmoid((sample.B08 - sample.B04) / (sample.B08 + sample.B04));
+    return findColor(ndviColorMap, contrastedNDVI).concat(alpha);
+  }
 }
+
 
 `
                 );
