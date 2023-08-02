@@ -159,8 +159,7 @@ const MapComponent = () => {
           ? "Switch to True Color"
           : "Switch to Normal Color"}
       </button>
-      {/* Display the fetched image inside the polygon */}
-      {imageData && <img src={imageData} alt="Fetched Image" />}
+
       {isDrawing && (
         <PolygonDrawing map={map} onPolygonDrawn={handlePolygonDrawn} />
       )}
