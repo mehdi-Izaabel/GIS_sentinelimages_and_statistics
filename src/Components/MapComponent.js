@@ -28,6 +28,9 @@ const MapComponent = () => {
   const [imageData, setImageData] = useState(null);
   const [currentLayer, setCurrentLayer] = useState("normal");
 
+  const [selectedImageType, setSelectedImageType] = useState("NDVI");
+  const imageTypes = ["NDVI", "EVI", "FalseColor", "NDWI", "SAVI"];
+
   useEffect(() => {
     const initialMap = new Map({
       target: mapRef.current,
@@ -69,15 +72,17 @@ const MapComponent = () => {
     setPolygonCoordinates(coordinates);
   };
 
-  const handleFetchData = async () => {
+  const handleFetchData = async (imageType) => {
     try {
+      console.log("Selected Image Type:", imageType);
+
       if (!map || polygonCoordinates.length === 0) {
         console.warn(
           "Cannot fetch data. Map or polygon coordinates are not ready."
         );
         return;
       }
-      const imageBlob = await fetchData("NDVI", {
+      const imageBlob = await fetchData(imageType, {
         coordinates: polygonCoordinates,
         refreshToken,
         token,
@@ -108,6 +113,10 @@ const MapComponent = () => {
     } else {
       setCurrentLayer("normal");
     }
+  };
+
+  const handleImageTypeChange = (event) => {
+    setSelectedImageType(event.target.value);
   };
 
   useEffect(() => {
@@ -144,9 +153,20 @@ const MapComponent = () => {
       >
         {isDrawing ? "Stop Drawing" : "Start Drawing"}
       </button>
+      <select
+        style={{ position: "absolute", top: "160px", left: "10px", zIndex: 1 }}
+        value={selectedImageType}
+        onChange={handleImageTypeChange}
+      >
+        {imageTypes.map((type) => (
+          <option key={type} value={type}>
+            {type}
+          </option>
+        ))}
+      </select>
       <button
         style={{ position: "absolute", top: "100px", left: "10px", zIndex: 1 }}
-        onClick={handleFetchData}
+        onClick={() => handleFetchData(selectedImageType)}
       >
         Get Image
       </button>

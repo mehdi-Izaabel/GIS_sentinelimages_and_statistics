@@ -1,8 +1,8 @@
 import axios from "axios";
 import qs from "qs";
 
-const client_id = "f41c8d96-3d3a-4364-ac63-d4886ef63e04";
-const client_secret = ")<]J8(*1Zyt(KcDw28qdg(6~UdUZn}USE()z<>@I";
+const client_id = "d96154b9-4227-4288-acc7-e990b9b57fd6";
+const client_secret = "I:8WD0*#iajX(l~|0d4Kk_~_jU9wc!/TI,HRx<QA";
 
 const instance = axios.create({
     baseURL: "https://services.sentinel-hub.com",
