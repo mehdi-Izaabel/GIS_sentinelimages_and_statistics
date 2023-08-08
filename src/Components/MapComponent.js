@@ -16,6 +16,9 @@ import "ol/ol.css";
 import PolygonDrawing from "./PolygonDrawing";
 import { AuthContext } from "../Contexts/Authcontext";
 import { fetchData } from "../Requestimages/imagerequests";
+import { fetchStats } from "../Requestimages/statsrequests";
+import "../styles/Buttonstyles.css";
+import "../styles/layerSwitcherControl.css";
 
 const MapComponent = () => {
   const mapRef = useRef(null);
@@ -30,6 +33,14 @@ const MapComponent = () => {
 
   const [selectedImageType, setSelectedImageType] = useState("NDVI");
   const imageTypes = ["NDVI", "EVI", "FalseColor", "NDWI", "SAVI"];
+  const baseMaps = {
+    STREETS: {
+      img: "https://cloud.maptiler.com/static/img/maps/streets.png",
+    },
+    HYBRID: {
+      img: "https://cloud.maptiler.com/static/img/maps/hybrid.png",
+    },
+  };
 
   useEffect(() => {
     const initialMap = new Map({
@@ -107,6 +118,20 @@ const MapComponent = () => {
     }
   };
 
+  const handleFetchStats = async () => {
+    try {
+      const response = await fetchStats({
+        token,
+        coordinates: polygonCoordinates,
+        refreshToken,
+      });
+
+      console.log("Stats Response:", response);
+    } catch (error) {
+      console.error("Error fetching stats:", error.message);
+    }
+  };
+
   const handleToggleLayer = () => {
     if (currentLayer === "normal") {
       setCurrentLayer("TrueColor");
@@ -146,15 +171,23 @@ const MapComponent = () => {
 
   return (
     <>
+      <div className="maplibregl-ctrl-basemaps">
+        {Object.keys(baseMaps).map((layerId) => (
+          <img
+            key={layerId}
+            src={baseMaps[layerId].img}
+            alt={layerId}
+            className={`basemap ${currentLayer === layerId ? "active" : ""}`}
+            onClick={() => handleToggleLayer(layerId)}
+          />
+        ))}
+      </div>
       <div ref={mapRef} style={{ width: "100%", height: "100vh" }}></div>
-      <button
-        style={{ position: "absolute", top: "70px", left: "10px", zIndex: 1 }}
-        onClick={handleDrawingPolygon}
-      >
+      <button className="Drawingbutton" onClick={handleDrawingPolygon}>
         {isDrawing ? "Stop Drawing" : "Start Drawing"}
       </button>
       <select
-        style={{ position: "absolute", top: "160px", left: "10px", zIndex: 1 }}
+        className="selectImageType"
         value={selectedImageType}
         onChange={handleImageTypeChange}
       >
@@ -165,16 +198,17 @@ const MapComponent = () => {
         ))}
       </select>
       <button
-        style={{ position: "absolute", top: "100px", left: "10px", zIndex: 1 }}
+        className="Getimagebutton"
         onClick={() => handleFetchData(selectedImageType)}
       >
         Get Image
       </button>
-      {/* Add a button to switch to true color layer */}
-      <button
-        style={{ position: "absolute", top: "130px", left: "10px", zIndex: 1 }}
-        onClick={handleToggleLayer}
-      >
+
+      <button className="Getstatsbutton" onClick={() => handleFetchStats()}>
+        Get Image Stats
+      </button>
+
+      <button className="changemapimagerybutton" onClick={handleToggleLayer}>
         {currentLayer === "normal"
           ? "Switch to True Color"
           : "Switch to Normal Color"}
