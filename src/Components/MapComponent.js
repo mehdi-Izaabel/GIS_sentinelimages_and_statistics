@@ -30,9 +30,11 @@ const MapComponent = () => {
   const { token, refreshToken } = useContext(AuthContext);
   const [imageData, setImageData] = useState(null);
   const [currentLayer, setCurrentLayer] = useState("normal");
+  const [isLoadingImage, setIsLoadingImage] = useState(false);
 
   const [selectedImageType, setSelectedImageType] = useState("NDVI");
   const imageTypes = ["NDVI", "EVI", "FalseColor", "NDWI", "SAVI"];
+
   const baseMaps = {
     STREETS: {
       img: "https://cloud.maptiler.com/static/img/maps/streets.png",
@@ -69,7 +71,7 @@ const MapComponent = () => {
     if (map) {
       if (currentLayer === "normal") {
         map.getLayers().setAt(1, new TileLayer({ source: new OSM() }));
-      } else if (currentLayer === "TrueColor") {
+      } else if (currentLayer === "hybrid") {
         map.getLayers().setAt(1, trueColorLayer);
       }
     }
@@ -93,6 +95,7 @@ const MapComponent = () => {
         );
         return;
       }
+      setIsLoadingImage(true);
       const imageBlob = await fetchData(imageType, {
         coordinates: polygonCoordinates,
         refreshToken,
@@ -113,8 +116,10 @@ const MapComponent = () => {
 
       map.addLayer(imageSource);
       setImageData(imageSource.getSource().getUrl());
+      setIsLoadingImage(false);
     } catch (error) {
       console.error("Error fetching data:", error.message);
+      setIsLoadingImage(false);
     }
   };
 
@@ -129,14 +134,6 @@ const MapComponent = () => {
       console.log("Stats Response:", response);
     } catch (error) {
       console.error("Error fetching stats:", error.message);
-    }
-  };
-
-  const handleToggleLayer = () => {
-    if (currentLayer === "normal") {
-      setCurrentLayer("TrueColor");
-    } else {
-      setCurrentLayer("normal");
     }
   };
 
@@ -171,18 +168,22 @@ const MapComponent = () => {
 
   return (
     <>
-      <div className="maplibregl-ctrl-basemaps">
-        {Object.keys(baseMaps).map((layerId) => (
+      <div ref={mapRef} style={{ width: "100%", height: "100vh" }}>
+        <div className="layer-switcher-container">
           <img
-            key={layerId}
-            src={baseMaps[layerId].img}
-            alt={layerId}
-            className={`basemap ${currentLayer === layerId ? "active" : ""}`}
-            onClick={() => handleToggleLayer(layerId)}
+            src={
+              currentLayer === "normal"
+                ? baseMaps.HYBRID.img
+                : baseMaps.STREETS.img
+            }
+            alt={currentLayer}
+            className="layer-switcher-button"
+            onClick={() =>
+              setCurrentLayer(currentLayer === "normal" ? "hybrid" : "normal")
+            }
           />
-        ))}
+        </div>
       </div>
-      <div ref={mapRef} style={{ width: "100%", height: "100vh" }}></div>
       <button className="Drawingbutton" onClick={handleDrawingPolygon}>
         {isDrawing ? "Stop Drawing" : "Start Drawing"}
       </button>
@@ -192,26 +193,20 @@ const MapComponent = () => {
         onChange={handleImageTypeChange}
       >
         {imageTypes.map((type) => (
-          <option key={type} value={type}>
+          <option key={type} value={type} className="selectImageType-option">
             {type}
           </option>
         ))}
       </select>
       <button
-        className="Getimagebutton"
+        className={`Getimagebutton ${isLoadingImage ? "loading" : ""}`}
         onClick={() => handleFetchData(selectedImageType)}
       >
-        Get Image
+        {isLoadingImage ? <span className="spinner"></span> : "Get Image"}
       </button>
 
       <button className="Getstatsbutton" onClick={() => handleFetchStats()}>
-        Get Image Stats
-      </button>
-
-      <button className="changemapimagerybutton" onClick={handleToggleLayer}>
-        {currentLayer === "normal"
-          ? "Switch to True Color"
-          : "Switch to Normal Color"}
+        Get Statistics
       </button>
 
       {isDrawing && (
