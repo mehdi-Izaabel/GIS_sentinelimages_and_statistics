@@ -126,8 +126,9 @@ const MapComponent = () => {
   const handleFetchStats = async () => {
     try {
       const response = await fetchStats({
-        token,
         coordinates: polygonCoordinates,
+        token,
+
         refreshToken,
       });
 

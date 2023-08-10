@@ -96,6 +96,8 @@
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.65);
   cursor: pointer;
   transition: transform 0.3s, opacity 0.3s;
+  font-size: 16px;
+  text-align: center;
 }
 
 .selectImageType-option {
@@ -119,6 +121,7 @@
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.65);
   cursor: pointer;
   transition: transform 0.3s, opacity 0.3s;
+  border-radius: 7px;
 }
 
 .layer-switcher-button:hover {

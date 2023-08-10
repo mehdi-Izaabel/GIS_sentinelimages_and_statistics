@@ -1,8 +1,20 @@
 import axios from "axios";
 
+export const fetchStats = async(params) => {
 
+    console.log("received token", params.token);
+    console.log("Received coordinates:", params.coordinates);
+    const currentDate = new Date();
+    const oneYearAgo = new Date();
+    oneYearAgo.setUTCFullYear(currentDate.getUTCFullYear() - 1);
 
-const evalscript = `//VERSION=3
+    const toDate = currentDate.toISOString();
+    const fromDate = oneYearAgo.toISOString();
+
+    try {
+
+        const evalscript = `
+//VERSION=3
 function setup() {
   return {
     input: [{
@@ -44,72 +56,48 @@ function evaluatePixel(samples) {
         dataMask: [samples.dataMask * validNDVIMask * noWaterMask]
     }
 }
-  `;
-export const fetchStats = async(params) => {
-    const currentDate = new Date();
-    const oneYearAgo = new Date();
-    oneYearAgo.setUTCFullYear(currentDate.getUTCFullYear() - 1);
-
-    const toDate = currentDate.toISOString();
-    const fromDate = oneYearAgo.toISOString();
-
-
-
-    try {
-        const formData = new FormData();
-        formData.append(
-            "evalscript",
-            evalscript
-        );
-
-        formData.append(
-            "stats_request",
-            `{
-        "input": {
-            "bounds": {
-                "geometry": {
-                    "type": "Polygon",
-                    "coordinates": [
-                     ${params.coordinates}
-                    ]
+`;
+        const stats_request = {
+            "input": {
+                "bounds": {
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [params.coordinates]
+                    },
+                    "properties": {
+                        "crs": "http://www.opengis.net/def/crs/EPSG/0/32633"
+                    }
                 },
-                "properties": {
-                    "crs": "http://www.opengis.net/def/crs/EPSG/0/32633"
-                }
-            },
-            "data": [
-                {
+                "data": [{
                     "type": "sentinel-2-l2a",
                     "dataFilter": {
                         "mosaickingOrder": "leastCC"
                     }
-                }
-            ]
-        },
-        "aggregation": {
-            "timeRange": {
-                "from": "2020-01-01T00:00:00Z",
-                "to": "2020-12-31T00:00:00Z"
+                }]
             },
-            "aggregationInterval": {
-                "of": "P30D"
-            },
-            "evalscript": evalscript,
-            "resx": 10,
-            "resy": 10
-        }
-    }`
-        );
+            "aggregation": {
+                "timeRange": {
+                    "from": fromDate,
+                    "to": toDate
+                },
+                "aggregationInterval": {
+                    "of": "P30D"
+                },
+                "evalscript": evalscript,
+                "resx": 10,
+                "resy": 10
+            }
+        };
+
 
         const response = await axios.post(
             "https://services.sentinel-hub.com/api/v1/statistics",
-            formData, {
+            stats_request, {
                 headers: {
                     Authorization: `Bearer ${params.token}`,
-                    "Content-Type": "multipart/form-data",
-                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                    Accept: "application/json"
                 },
-
             }
         );
 
@@ -121,16 +109,15 @@ export const fetchStats = async(params) => {
         }
 
         if (response.status === 200) {
-            const Stats = response.data;
-            console.log("Statistics:", response.data);
-
-            return Stats;
+            const statistics = response.data;
+            console.log(statistics);
+            return statistics;
         } else {
             throw new Error(
                 `Error fetching Stats: ${response.status} - ${response.statusText}`
             );
         }
     } catch (error) {
-        throw new Error(`Error fetching stats: ${error.message}`);
+        throw new Error(`Error fetching Stats: ${error.message}`);
     }
 };
