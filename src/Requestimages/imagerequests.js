@@ -109,12 +109,13 @@ function evaluatePixel(sample) {
               },
               "data": [
                 {
-                  "type": "sentinel-2-l1c",
+                  "type": "sentinel-2-l2a",
                   "dataFilter": {
                     "timeRange": {
                       "from": "${fromDate}",
                       "to": "${toDate}"
-                    }
+                    },
+"maxCloudCoverage": 0
                   }
                 }
               ]
@@ -140,7 +141,7 @@ function evaluatePixel(sample) {
                     `// VERSION=3
 function setup() {
   return {
-    input: [{ bands: ["B04", "B08", "dataMask"] }],
+    input: [{ bands: ["B04", "B08", "dataMask","SCL"] }],
     output: {
       id: "default",
       bands: 4
@@ -191,7 +192,6 @@ function evaluatePixel(sample) {
     return findColor(ndviColorMap, contrastedNDVI).concat(alpha);
   }
 }
-
 `
                 );
 
@@ -247,7 +247,7 @@ function evaluatePixel(sample) {
               },
               "data": [
                 {
-                  "type": "sentinel-2-l1c",
+                  "type": "sentinel-2-l2a",
                   "dataFilter": {
                     "timeRange": {
                       "from": "${fromDate}",
@@ -278,7 +278,7 @@ function evaluatePixel(sample) {
                     `// VERSION=3
 function setup() {
   return {
-    input: [{ bands: ["B04", "B08","B02", "dataMask"] }],
+    input: [{ bands: ["B04", "B08","B02", "dataMask","SCL"] }],
     output: {
       id: "default",
       bands: 4
@@ -368,7 +368,7 @@ else return [0,0.27,0,alpha];
               },
               "data": [
                 {
-                  "type": "sentinel-2-l1c",
+                  "type": "sentinel-2-l2a",
                   "dataFilter": {
                     "timeRange": {
                       "from": "${fromDate}",
@@ -399,7 +399,7 @@ else return [0,0.27,0,alpha];
                     `// VERSION=3
 function setup() {
   return {
-    input: [{ bands: ["B04", "B08","B03", "dataMask"] }],
+    input: [{ bands: ["B04", "B08","B03", "dataMask","SCL"] }],
     output: {
       id: "default",
       bands: 4
@@ -473,7 +473,7 @@ return [0,0,0,alpha];
               },
               "data": [
                 {
-                  "type": "sentinel-2-l1c",
+                  "type": "sentinel-2-l2a",
                   "dataFilter": {
                     "timeRange": {
                       "from": "${fromDate}",
@@ -504,7 +504,7 @@ return [0,0,0,alpha];
                     `// VERSION=3
 function setup() {
   return {
-    input: [{ bands: ["B08","B03", "dataMask"] }],
+    input: [{ bands: ["B08","B03", "dataMask","SCL"] }],
     output: {
       id: "default",
       bands: 4
@@ -595,7 +595,7 @@ if (samples.dataMask === 1) {
               },
               "data": [
                 {
-                  "type": "sentinel-2-l1c",
+                  "type": "sentinel-2-l2a",
                   "dataFilter": {
                     "timeRange": {
                       "from": "${fromDate}",
@@ -626,7 +626,7 @@ if (samples.dataMask === 1) {
                     `// VERSION=3
 function setup() {
   return {
-    input: [{ bands: ["B08","B04", "dataMask"] }],
+    input: [{ bands: ["B08","B04", "dataMask","SCL"] }],
     output: {
       id: "default",
       bands: 4
@@ -689,8 +689,108 @@ return colorBlend
                 throw new Error(`Error fetching ${type} image: ${error.message}`);
             }
             break;
+
+        case "TrueColor":
+            try {
+                const formData = new FormData();
+                formData.append(
+                    "request",
+                    `{
+            "input": {
+              "bounds": {
+                "properties": {
+                  "crs": "https://www.opengis.net/def/crs/OGC/1.3/CRS84"
+                },
+                "geometry": {
+                  "type": "Polygon",
+                  "coordinates": [${JSON.stringify(params.coordinates)}]
+                }
+              },
+              "data": [
+                {
+                  "type": "sentinel-2-l2a",
+                  "dataFilter": {
+                    "timeRange": {
+                      "from": "${fromDate}",
+                      "to": "${toDate}"
+                    },
+          "maxCloudCoverage": 0
+          
+                  }
+                }
+              ]
+            },
+            "output": {
+              "width": 512,
+              "height": 512,
+              "responses": [
+                {
+                  "identifier": "default",
+                  "format": {
+                    "type": "image/png",
+                    "quality": 80
+                  }
+                }
+              ]
+            }
+          }`
+                );
+
+                formData.append(
+                    "evalscript",
+                    `//VERSION=3
+function setup(){
+  return{
+    input: ["B02", "B03", "B04", "dataMask"],
+    output: {bands: 4}
+  }
+}
+
+function evaluatePixel(sample){
+
+  let gain = 2.5;
+  // Return RGB
+  return [sample.B04 * gain, sample.B03 * gain, sample.B02 * gain, sample.dataMask];
+}
+`
+                );
+
+                const response = await axios.post(
+                    "https://services.sentinel-hub.com/api/v1/process",
+                    formData, {
+                        headers: {
+                            Authorization: `Bearer ${params.token}`,
+                            "Content-Type": "multipart/form-data",
+                            Accept: "*/*",
+                        },
+                        responseType: "blob",
+                    }
+                );
+
+                console.log(response);
+
+                if (response.status === 401) {
+                    params.refreshToken(() => fetchData(type, params));
+                    return;
+                }
+
+                if (response.status === 200) {
+                    const imageBlob = response.data;
+                    console.log(imageBlob);
+                    return imageBlob;
+                } else {
+                    throw new Error(
+                        `Error fetching ${type} image: ${response.status} - ${response.statusText}`
+                    );
+                }
+            } catch (error) {
+                throw new Error(`Error fetching ${type} image: ${error.message}`);
+            }
+            break;
+
         default:
             // Invalid type
             throw new Error(`Invalid data type: ${type}`);
     }
+
 };

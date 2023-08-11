@@ -134,3 +134,20 @@
 .layer-switcher-image.hidden {
   display: none;
 }
+
+.RemoveImageButton {
+  position: absolute;
+  bottom: 230px;
+  right: 10px;
+  background-color: #b00e0e;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-radius: 10px;
+  z-index: 1;
+  border: 2px solid #ccc;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.65);
+  cursor: pointer;
+  transition: transform 0.3s, opacity 0.3s;
+}

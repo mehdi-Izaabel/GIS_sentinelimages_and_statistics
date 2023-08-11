@@ -31,9 +31,11 @@ const MapComponent = () => {
   const [imageData, setImageData] = useState(null);
   const [currentLayer, setCurrentLayer] = useState("normal");
   const [isLoadingImage, setIsLoadingImage] = useState(false);
+  const [imageSource, setImageSource] = useState(null);
+  const [isImageDisplayed, setIsImageDisplayed] = useState(false);
 
   const [selectedImageType, setSelectedImageType] = useState("NDVI");
-  const imageTypes = ["NDVI", "EVI", "FalseColor", "NDWI", "SAVI"];
+  const imageTypes = ["NDVI", "EVI", "FalseColor", "NDWI", "SAVI", "TrueColor"];
 
   const baseMaps = {
     STREETS: {
@@ -103,7 +105,7 @@ const MapComponent = () => {
       });
 
       const imageExtent = getExtentForCoordinates(polygonCoordinates);
-      const imageSource = new ImageLayer({
+      const newImageSource = new ImageLayer({
         source: new ImageStatic({
           url: URL.createObjectURL(imageBlob),
           imageExtent,
@@ -114,8 +116,10 @@ const MapComponent = () => {
         map.removeLayer(vectorLayerRef.current);
       }
 
-      map.addLayer(imageSource);
-      setImageData(imageSource.getSource().getUrl());
+      map.addLayer(newImageSource);
+      setImageSource(newImageSource);
+      setImageData(newImageSource.getSource().getUrl());
+      setIsImageDisplayed(true);
       setIsLoadingImage(false);
     } catch (error) {
       console.error("Error fetching data:", error.message);
@@ -128,7 +132,6 @@ const MapComponent = () => {
       const response = await fetchStats({
         coordinates: polygonCoordinates,
         token,
-
         refreshToken,
       });
 
@@ -141,7 +144,13 @@ const MapComponent = () => {
   const handleImageTypeChange = (event) => {
     setSelectedImageType(event.target.value);
   };
-
+  const removeDisplayedImage = () => {
+    if (map && isImageDisplayed) {
+      map.removeLayer(imageSource);
+      setImageData(null);
+      setIsImageDisplayed(false);
+    }
+  };
   useEffect(() => {
     vectorLayerRef.current = new VectorLayer({
       source: vectorSourceRef.current,
@@ -209,7 +218,9 @@ const MapComponent = () => {
       <button className="Getstatsbutton" onClick={() => handleFetchStats()}>
         Get Statistics
       </button>
-
+      <button className="RemoveImageButton" onClick={removeDisplayedImage}>
+        Remove Image
+      </button>
       {isDrawing && (
         <PolygonDrawing map={map} onPolygonDrawn={handlePolygonDrawn} />
       )}

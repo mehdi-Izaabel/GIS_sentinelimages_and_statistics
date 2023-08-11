@@ -31,14 +31,27 @@ function setup() {
         bands: 1
       },
       {
+        id: "B04",
+        bands: 1
+      },
+      {
+        id: "B08",
+        bands: 1
+      },
+      {
+        id: "SCL",
+        bands: 1
+      },
+      {
         id: "dataMask",
         bands: 1
-      }]
+      }
+    ]
   }
 }
 
 function evaluatePixel(samples) {
-    let ndvi = (samples.B08 - samples.B04)/(samples.B08 + samples.B04)
+    let ndvi = (samples.B08 - samples.B04) / (samples.B08 + samples.B04)
 
     var validNDVIMask = 1
     if (samples.B08 + samples.B04 == 0 ){
@@ -52,10 +65,13 @@ function evaluatePixel(samples) {
 
     return {
         data: [ndvi],
-        // Exclude nodata pixels, pixels where ndvi is not defined and water pixels from statistics:
+        B04: [samples.B04],
+        B08: [samples.B08],
+        SCL: [samples.SCL],
         dataMask: [samples.dataMask * validNDVIMask * noWaterMask]
     }
 }
+
 `;
         const stats_request = {
             "input": {
