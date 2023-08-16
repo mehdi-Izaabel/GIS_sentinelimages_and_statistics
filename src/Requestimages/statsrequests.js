@@ -21,55 +21,33 @@ function setup() {
       bands: [
         "B04",
         "B08",
-        "SCL",
         "dataMask"
       ]
     }],
     output: [
       {
-        id: "data",
-        bands: 1
+        id: "ndvi",
+        bands: ["NDVI"]
       },
-      {
-        id: "B04",
-        bands: 1
-      },
-      {
-        id: "B08",
-        bands: 1
-      },
-      {
-        id: "SCL",
-        bands: 1
-      },
-      {
+      
+      {     
         id: "dataMask",
         bands: 1
-      }
-    ]
-  }
+      }]
+  };
 }
 
 function evaluatePixel(samples) {
-    let ndvi = (samples.B08 - samples.B04) / (samples.B08 + samples.B04)
-
-    var validNDVIMask = 1
-    if (samples.B08 + samples.B04 == 0 ){
-        validNDVIMask = 0
+    let ndvi = (samples.B08 - samples.B04) / (samples.B08 + samples.B04);
+    
+        var  validNDVIMask = 1 
+        if ( samples.B08 + samples.B04 == 0 ){
+                validNDVIMask = 0        
     }
-
-    var noWaterMask = 1
-    if (samples.SCL == 6 ){
-        noWaterMask = 0
-    }
-
     return {
-        data: [ndvi],
-        B04: [samples.B04],
-        B08: [samples.B08],
-        SCL: [samples.SCL],
-        dataMask: [samples.dataMask * validNDVIMask * noWaterMask]
-    }
+        ndvi : [ndvi],
+        dataMask: [samples.dataMask * validNDVIMask],
+    };
 }
 
 `;
@@ -79,16 +57,14 @@ function evaluatePixel(samples) {
                     "geometry": {
                         "type": "Polygon",
                         "coordinates": [params.coordinates]
-                    },
-                    "properties": {
-                        "crs": "http://www.opengis.net/def/crs/EPSG/0/32633"
                     }
                 },
                 "data": [{
-                    "type": "sentinel-2-l2a",
                     "dataFilter": {
-                        "mosaickingOrder": "leastCC"
-                    }
+                        maxCloudCoverage: 5,
+                        mosaickingOrder: "mostRecent"
+                    },
+                    "type": "sentinel-2-l2a"
                 }]
             },
             "aggregation": {
@@ -97,13 +73,24 @@ function evaluatePixel(samples) {
                     "to": toDate
                 },
                 "aggregationInterval": {
-                    "of": "P30D"
+                    "of": "P10D"
                 },
+                "width": 832.838,
+                "height": 575.226,
                 "evalscript": evalscript,
-                "resx": 10,
-                "resy": 10
+            },
+            "calculations": {
+                "default": {
+                    "histograms": {
+                        "default": {
+                            "nBins": 25,
+                            "binWidth": 0.05
+                        }
+                    }
+                }
             }
         };
+
 
 
         const response = await axios.post(
@@ -126,7 +113,9 @@ function evaluatePixel(samples) {
 
         if (response.status === 200) {
             const statistics = response.data;
+
             console.log(statistics);
+
             return statistics;
         } else {
             throw new Error(

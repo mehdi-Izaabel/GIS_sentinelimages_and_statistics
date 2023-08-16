@@ -19,6 +19,9 @@ import { fetchData } from "../Requestimages/imagerequests";
 import { fetchStats } from "../Requestimages/statsrequests";
 import "../styles/Buttonstyles.css";
 import "../styles/layerSwitcherControl.css";
+import ChartComponent from "./ChartComponent";
+import ChartModal from "./ChartModal";
+import "../styles/ChartModal.css";
 
 const MapComponent = () => {
   const mapRef = useRef(null);
@@ -33,9 +36,12 @@ const MapComponent = () => {
   const [isLoadingImage, setIsLoadingImage] = useState(false);
   const [imageSource, setImageSource] = useState(null);
   const [isImageDisplayed, setIsImageDisplayed] = useState(false);
+  const [HistogramData, setHistogramData] = useState(null);
 
   const [selectedImageType, setSelectedImageType] = useState("NDVI");
   const imageTypes = ["NDVI", "EVI", "FalseColor", "NDWI", "SAVI", "TrueColor"];
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isChartLoading, setIsChartLoading] = useState(false);
 
   const baseMaps = {
     STREETS: {
@@ -63,6 +69,7 @@ const MapComponent = () => {
     };
   }, []);
 
+  /////////////////////////////////////// Satellite layer ////////////
   useEffect(() => {
     const trueColorLayer = new TileLayer({
       source: new XYZ({
@@ -79,6 +86,7 @@ const MapComponent = () => {
     }
   }, [map, currentLayer]);
 
+  ///////////////////////////////// polygon drawing states ////////
   const handleDrawingPolygon = () => {
     setIsDrawing(!isDrawing);
   };
@@ -87,6 +95,7 @@ const MapComponent = () => {
     setPolygonCoordinates(coordinates);
   };
 
+  /////////////////////////////// image fetching handling ////////////////////////////
   const handleFetchData = async (imageType) => {
     try {
       console.log("Selected Image Type:", imageType);
@@ -127,8 +136,10 @@ const MapComponent = () => {
     }
   };
 
+  //////////////////////////////////////////// statistics handling ///////////////////////////////
   const handleFetchStats = async () => {
     try {
+      setIsChartLoading(true);
       const response = await fetchStats({
         coordinates: polygonCoordinates,
         token,
@@ -136,11 +147,15 @@ const MapComponent = () => {
       });
 
       console.log("Stats Response:", response);
+      setHistogramData(response.data);
+      setIsModalOpen(true);
     } catch (error) {
       console.error("Error fetching stats:", error.message);
+    } finally {
+      setIsChartLoading(false);
     }
   };
-
+  /////////////////////////////////////////////////////// changing ,image types ////////////////////
   const handleImageTypeChange = (event) => {
     setSelectedImageType(event.target.value);
   };
@@ -151,6 +166,8 @@ const MapComponent = () => {
       setIsImageDisplayed(false);
     }
   };
+
+  ///////////////////////////////////////// polygon shape in the map //////////////////////
   useEffect(() => {
     vectorLayerRef.current = new VectorLayer({
       source: vectorSourceRef.current,
@@ -176,6 +193,7 @@ const MapComponent = () => {
     };
   }, [map]);
 
+  //////////////////////////// botonat, selects setc ....
   return (
     <>
       <div ref={mapRef} style={{ width: "100%", height: "100vh" }}>
@@ -210,7 +228,9 @@ const MapComponent = () => {
       </select>
       <button
         className={`Getimagebutton ${isLoadingImage ? "loading" : ""}`}
-        onClick={() => handleFetchData(selectedImageType)}
+        onClick={() => {
+          handleFetchData(selectedImageType);
+        }}
       >
         {isLoadingImage ? <span className="spinner"></span> : "Get Image"}
       </button>
@@ -221,6 +241,19 @@ const MapComponent = () => {
       <button className="RemoveImageButton" onClick={removeDisplayedImage}>
         Remove Image
       </button>
+      {isChartLoading ? (
+        <div className="loading-screen">
+          Please Wait..
+          <div className="loading-spinner"></div>
+        </div>
+      ) : (
+        <ChartModal
+          isOpen={isModalOpen}
+          onRequestClose={() => setIsModalOpen(false)}
+          histogramData={HistogramData}
+        />
+      )}
+
       {isDrawing && (
         <PolygonDrawing map={map} onPolygonDrawn={handlePolygonDrawn} />
       )}
@@ -230,6 +263,7 @@ const MapComponent = () => {
 
 export default MapComponent;
 
+////   calculating extent of the coordinates to use for fetching image directly o top of shape drawed , ch7fatna!!!
 function getExtentForCoordinates(coordinates) {
   const extent = coordinates.reduce(
     (acc, coord) => {

@@ -252,7 +252,8 @@ function evaluatePixel(sample) {
                     "timeRange": {
                       "from": "${fromDate}",
                       "to": "${toDate}"
-                    }
+                    },
+"maxCloudCoverage": 0
                   }
                 }
               ]
@@ -373,7 +374,8 @@ else return [0,0.27,0,alpha];
                     "timeRange": {
                       "from": "${fromDate}",
                       "to": "${toDate}"
-                    }
+                    },
+"maxCloudCoverage": 0
                   }
                 }
               ]
@@ -478,7 +480,8 @@ return [0,0,0,alpha];
                     "timeRange": {
                       "from": "${fromDate}",
                       "to": "${toDate}"
-                    }
+                    },
+"maxCloudCoverage": 0
                   }
                 }
               ]
@@ -600,7 +603,8 @@ if (samples.dataMask === 1) {
                     "timeRange": {
                       "from": "${fromDate}",
                       "to": "${toDate}"
-                    }
+                    },
+"maxCloudCoverage": 0
                   }
                 }
               ]
