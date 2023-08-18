@@ -1,17 +1,24 @@
-/* Add this to your CSS */
-
 .chart-modal {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 95%;
-  height: 80%;
+  width: 90%;
+  height: 70%;
   max-width: 800px;
   background-color: white;
   border-radius: 5px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
   overflow: hidden;
+}
+
+@media screen and (max-width: 768px) and (orientation: landscape) {
+  .chart-modal {
+    width: 95%;
+    height: 95vh;
+    /* Adjust height for landscape orientation */
+    max-width: none;
+  }
 }
 
 .chart-modal-overlay {
@@ -27,24 +34,49 @@
   z-index: 1000;
 }
 
+/* Adjust the layout of elements inside the modal */
+
 .chart-modal-content {
-  padding: 20px;
-  overflow: auto;
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+}
+
+/* Responsive adjustments for specific elements within the modal */
+
+.chart-title {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.chart-container {
+  width: 100%;
+  flex: 1;
+  /* Expand to fill available vertical space */
+}
+
+.chart-modal-close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  /* Rest of the styles ... */
 }
 
 .chart-modal-close-button {
   top: 10px;
   right: 10px;
   position: absolute;
-  background-color: #b00e0e;
+  background-color: #ec0707;
   color: white;
   border: none;
   padding: 5px 10px;
   cursor: pointer;
   z-index: 1;
-  border: 1px solid #ccc;
+  border: 2px solid #ccc;
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
   cursor: pointer;
   transition: transform 0.3s, opacity 0.3s;
+  border-radius: 5px;
 }

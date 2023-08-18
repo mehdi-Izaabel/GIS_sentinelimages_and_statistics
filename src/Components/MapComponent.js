@@ -42,6 +42,8 @@ const MapComponent = () => {
   const imageTypes = ["NDVI", "EVI", "FalseColor", "NDWI", "SAVI", "TrueColor"];
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isChartLoading, setIsChartLoading] = useState(false);
+  const [previousImageSource, setPreviousImageSource] = useState(null);
+  const [currentImageSource, setCurrentImageSource] = useState(null);
 
   const baseMaps = {
     STREETS: {
@@ -124,12 +126,16 @@ const MapComponent = () => {
       if (vectorLayerRef.current) {
         map.removeLayer(vectorLayerRef.current);
       }
-
+      if (previousImageSource) {
+        map.removeLayer(previousImageSource);
+      }
       map.addLayer(newImageSource);
       setImageSource(newImageSource);
       setImageData(newImageSource.getSource().getUrl());
       setIsImageDisplayed(true);
       setIsLoadingImage(false);
+
+      setCurrentImageSource(newImageSource);
     } catch (error) {
       console.error("Error fetching data:", error.message);
       setIsLoadingImage(false);
@@ -196,67 +202,69 @@ const MapComponent = () => {
   //////////////////////////// botonat, selects setc ....
   return (
     <>
-      <div ref={mapRef} style={{ width: "100%", height: "100vh" }}>
-        <div className="layer-switcher-container">
-          <img
-            src={
-              currentLayer === "normal"
-                ? baseMaps.HYBRID.img
-                : baseMaps.STREETS.img
-            }
-            alt={currentLayer}
-            className="layer-switcher-button"
-            onClick={() =>
-              setCurrentLayer(currentLayer === "normal" ? "hybrid" : "normal")
-            }
+      <div className="map-container">
+        <div ref={mapRef} style={{ width: "100%", height: "100vh" }}>
+          <div className="layer-switcher-container">
+            <img
+              src={
+                currentLayer === "normal"
+                  ? baseMaps.HYBRID.img
+                  : baseMaps.STREETS.img
+              }
+              alt={currentLayer}
+              className="layer-switcher-button"
+              onClick={() =>
+                setCurrentLayer(currentLayer === "normal" ? "hybrid" : "normal")
+              }
+            />
+          </div>
+        </div>
+        <button className="Drawingbutton" onClick={handleDrawingPolygon}>
+          {isDrawing ? "Stop Drawing" : "Start Drawing"}
+        </button>
+        <select
+          className="selectImageType"
+          value={selectedImageType}
+          onChange={handleImageTypeChange}
+        >
+          {imageTypes.map((type) => (
+            <option key={type} value={type} className="selectImageType-option">
+              {type}
+            </option>
+          ))}
+        </select>
+        <button
+          className={`Getimagebutton ${isLoadingImage ? "loading" : ""}`}
+          onClick={() => {
+            handleFetchData(selectedImageType);
+          }}
+        >
+          {isLoadingImage ? <span className="spinner"></span> : "Get Image"}
+        </button>
+
+        <button className="Getstatsbutton" onClick={() => handleFetchStats()}>
+          Get Statistics
+        </button>
+        <button className="RemoveImageButton" onClick={removeDisplayedImage}>
+          Remove Image
+        </button>
+        {isChartLoading ? (
+          <div className="loading-screen">
+            Please Wait..
+            <div className="loading-spinner"></div>
+          </div>
+        ) : (
+          <ChartModal
+            isOpen={isModalOpen}
+            onRequestClose={() => setIsModalOpen(false)}
+            histogramData={HistogramData}
           />
-        </div>
+        )}
+
+        {isDrawing && (
+          <PolygonDrawing map={map} onPolygonDrawn={handlePolygonDrawn} />
+        )}
       </div>
-      <button className="Drawingbutton" onClick={handleDrawingPolygon}>
-        {isDrawing ? "Stop Drawing" : "Start Drawing"}
-      </button>
-      <select
-        className="selectImageType"
-        value={selectedImageType}
-        onChange={handleImageTypeChange}
-      >
-        {imageTypes.map((type) => (
-          <option key={type} value={type} className="selectImageType-option">
-            {type}
-          </option>
-        ))}
-      </select>
-      <button
-        className={`Getimagebutton ${isLoadingImage ? "loading" : ""}`}
-        onClick={() => {
-          handleFetchData(selectedImageType);
-        }}
-      >
-        {isLoadingImage ? <span className="spinner"></span> : "Get Image"}
-      </button>
-
-      <button className="Getstatsbutton" onClick={() => handleFetchStats()}>
-        Get Statistics
-      </button>
-      <button className="RemoveImageButton" onClick={removeDisplayedImage}>
-        Remove Image
-      </button>
-      {isChartLoading ? (
-        <div className="loading-screen">
-          Please Wait..
-          <div className="loading-spinner"></div>
-        </div>
-      ) : (
-        <ChartModal
-          isOpen={isModalOpen}
-          onRequestClose={() => setIsModalOpen(false)}
-          histogramData={HistogramData}
-        />
-      )}
-
-      {isDrawing && (
-        <PolygonDrawing map={map} onPolygonDrawn={handlePolygonDrawn} />
-      )}
     </>
   );
 };
