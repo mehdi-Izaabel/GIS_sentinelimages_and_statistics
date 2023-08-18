@@ -165,11 +165,19 @@ const MapComponent = () => {
   const handleImageTypeChange = (event) => {
     setSelectedImageType(event.target.value);
   };
+  /////////////////////////////////////////////////////////
   const removeDisplayedImage = () => {
-    if (map && isImageDisplayed) {
-      map.removeLayer(imageSource);
+    if (map) {
+      // Remove all image layers
+      map.getLayers().forEach((layer) => {
+        if (layer instanceof ImageLayer) {
+          map.removeLayer(layer);
+        }
+      });
+
       setImageData(null);
       setIsImageDisplayed(false);
+      setCurrentImageSource(null);
     }
   };
 

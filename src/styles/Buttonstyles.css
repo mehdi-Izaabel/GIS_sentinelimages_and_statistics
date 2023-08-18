@@ -119,8 +119,8 @@
 
 .layer-switcher-container {
   position: absolute;
-  top: 40px;
-  right: 8px;
+  top: 45px;
+  right: 10px;
   z-index: 1;
 }
 
