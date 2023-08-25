@@ -10,14 +10,14 @@ const ChartComponent = ({ histogramData }) => {
                     type: "line", // Set chart type to line
                 },
                 title: {
-                    text: "NDVI Trends Over Last Year",
+                    text: "NDVI Values Over The Last Year",
                 },
                 xAxis: {
-                    type: "datetime", // Use datetime type for accurate date handling
-                    tickInterval: 3 * 30 * 24 * 3600 * 1000, // 3 months in milliseconds
+                    type: "datetime",
+                    tickInterval: 3 * 30 * 24 * 3600 * 1000,
                     labels: {
                         formatter: function() {
-                            return Highcharts.dateFormat("%b %Y", this.value); // Format the label to display only month and year
+                            return Highcharts.dateFormat("%b %Y", this.value);
                         },
                     },
                     title: {

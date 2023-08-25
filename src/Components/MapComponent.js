@@ -22,6 +22,7 @@ import "../styles/layerSwitcherControl.css";
 import ChartComponent from "./ChartComponent";
 import ChartModal from "./ChartModal";
 import "../styles/ChartModal.css";
+import { transform } from "ol/proj";
 
 const MapComponent = () => {
   const mapRef = useRef(null);
@@ -59,8 +60,9 @@ const MapComponent = () => {
       target: mapRef.current,
       layers: [new TileLayer({ source: new OSM() })],
       view: new View({
-        center: [0, 0],
-        zoom: 2,
+        center: transform([-9.48796, 30.31876], "EPSG:4326", "EPSG:3857"), // Center of Morocco
+        //center: [0, 0],
+        zoom: 5,
       }),
     });
 
@@ -211,7 +213,7 @@ const MapComponent = () => {
   return (
     <>
       <div className="map-container">
-        <div ref={mapRef} style={{ width: "100%", height: "100vh" }}>
+        <div ref={mapRef} id="map" style={{ width: "100%", height: "100vh" }}>
           <div className="layer-switcher-container">
             <img
               src={
