@@ -60,7 +60,7 @@ const MapComponent = () => {
       target: mapRef.current,
       layers: [new TileLayer({ source: new OSM() })],
       view: new View({
-        center: transform([-9.48796, 30.31876], "EPSG:4326", "EPSG:3857"), // Center of Morocco
+        center: transform([-9.48796, 30.31876], "EPSG:4326", "EPSG:3857"), // Area of  Morocco
         //center: [0, 0],
         zoom: 5,
       }),
@@ -167,7 +167,7 @@ const MapComponent = () => {
   const handleImageTypeChange = (event) => {
     setSelectedImageType(event.target.value);
   };
-  /////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////// remove the image displayed //////////////
   const removeDisplayedImage = () => {
     if (map) {
       // Remove all image layers
@@ -230,7 +230,7 @@ const MapComponent = () => {
           </div>
         </div>
         <button className="Drawingbutton" onClick={handleDrawingPolygon}>
-          {isDrawing ? "Stop Drawing" : "Start Drawing"}
+          {isDrawing ? "" : ""}
         </button>
         <select
           className="selectImageType"
@@ -249,15 +249,17 @@ const MapComponent = () => {
             handleFetchData(selectedImageType);
           }}
         >
-          {isLoadingImage ? <span className="spinner"></span> : "Get Image"}
+          {isLoadingImage ? <span className="spinner"></span> : " Get Image"}
         </button>
 
-        <button className="Getstatsbutton" onClick={() => handleFetchStats()}>
-          Get Statistics
-        </button>
-        <button className="RemoveImageButton" onClick={removeDisplayedImage}>
-          Remove Image
-        </button>
+        <button
+          className="Getstatsbutton"
+          onClick={() => handleFetchStats()}
+        ></button>
+        <button
+          className="RemoveImageButton"
+          onClick={removeDisplayedImage}
+        ></button>
         {isChartLoading ? (
           <div className="loading-screen">
             Please Wait..
@@ -281,7 +283,7 @@ const MapComponent = () => {
 
 export default MapComponent;
 
-////   calculating extent of the coordinates to use for fetching image directly o top of shape drawed , ch7fatna!!!
+////   calculating extent of the coordinates to use for fetching image directly o top of shape drawed , ch7fatna !
 function getExtentForCoordinates(coordinates) {
   const extent = coordinates.reduce(
     (acc, coord) => {
